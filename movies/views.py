@@ -1,6 +1,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Movie, Review
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.db.models import Count
 
 # Create your views here.
 def index(request):
@@ -16,7 +19,7 @@ def index(request):
         {'template_data': template_data})
 def show(request, id):
     movie = Movie.objects.get(id=id)
-    reviews = Review.objects.filter(movie=movie)
+    reviews = Review.objects.filter(movie=movie).annotate(num_likes=Count('likes')).order_by('-num_likes')
     template_data = {}
     template_data['title'] = movie.name
     template_data['movie'] = movie
@@ -58,3 +61,14 @@ def delete_review(request, id, review_id):
     review = get_object_or_404(Review, id=review_id, user=request.user)
     review.delete()
     return redirect('movies.show', id=id)
+@require_POST
+@login_required
+def like_review(request, review_id):
+    review = get_object_or_404(Review, id=review_id)
+    if request.user in review.likes.all():
+        review.likes.remove(request.user)
+        liked = False
+    else:
+        review.likes.add(request.user)
+        liked = True
+    return JsonResponse({'liked': liked, 'likes_count': review.likes.count()})
