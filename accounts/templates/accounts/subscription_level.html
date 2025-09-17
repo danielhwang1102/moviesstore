@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Subscription Level</h2>
+    <p><strong>Total Spent:</strong> ${{ template_data.total_spent }}</p>
+    <p><strong>Your Level:</strong> {{ template_data.level }}</p>
+    <hr>
+    <ul>
+        <li>Basic: Less than $15</li>
+        <li>Medium: $15 to $29.99</li>
+        <li>Premium: $30 and above</li>
+    </ul>
+</div>
+{% endblock %}

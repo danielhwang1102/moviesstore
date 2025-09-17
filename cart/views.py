@@ -37,6 +37,7 @@ def purchase(request):
     order = Order()
     order.user = request.user
     order.total = cart_total
+    order.total_price = cart_total
     order.save()
     for movie in movies_in_cart:
         item = Item()
