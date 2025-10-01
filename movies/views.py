@@ -12,6 +12,10 @@ def index(request):
         movies = Movie.objects.filter(name__icontains=search_term)
     else:
         movies = Movie.objects.all()
+    if search_term:
+        movies = Movie.objects.filter(is_petitioned=False, name__icontains=search_term)
+    else:
+        movies = Movie.objects.filter(is_petitioned=False)
     template_data = {}
     template_data['title'] = 'Movies'
     template_data['movies'] = movies
@@ -91,9 +95,12 @@ def create_petition(request):
         if movie_name:
             movie, created = Movie.objects.get_or_create(
                 name=movie_name,
-                defaults={'price': 0, 'description': 'Petitioned movie', 'image': 'movie_images/default.jpg'}
+                defaults={'price': 0, 'description': 'Petitioned movie', 'image': 'movie_images/default.jpg', 'is_petitioned': True}
             )
             Petition.objects.create(movie=movie, user=request.user)
+            if not movie.is_petitioned:
+                movie.is_petitioned = True
+                movie.save()
     return redirect('movies.petitions_page')
 
 @require_POST
