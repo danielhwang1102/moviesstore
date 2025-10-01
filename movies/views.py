@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Movie, Review
+from .models import Movie, Review, Petition
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
@@ -72,3 +72,38 @@ def like_review(request, review_id):
         review.likes.add(request.user)
         liked = True
     return JsonResponse({'liked': liked, 'likes_count': review.likes.count()})
+
+@login_required
+def petitions_page(request):
+    petitions = Petition.objects.select_related('movie', 'user').annotate(likes_count=Count('likes')).order_by('-likes_count')
+    movies = Movie.objects.all()
+    template_data = {
+        'petitions': petitions,
+        'title': 'All Petitions',
+        'movies': movies
+    }
+    return render(request, 'movies/petitions.html', {'template_data': template_data})
+
+@login_required
+def create_petition(request):
+    if request.method == 'POST':
+        movie_name = request.POST.get('movie_name')
+        if movie_name:
+            movie, created = Movie.objects.get_or_create(
+                name=movie_name,
+                defaults={'price': 0, 'description': 'Petitioned movie', 'image': 'movie_images/default.jpg'}
+            )
+            Petition.objects.create(movie=movie, user=request.user)
+    return redirect('movies.petitions_page')
+
+@require_POST
+@login_required
+def like_petition(request, petition_id):
+    petition = get_object_or_404(Petition, id=petition_id)
+    if request.user in petition.likes.all():
+        petition.likes.remove(request.user)
+        liked = False
+    else:
+        petition.likes.add(request.user)
+        liked = True
+    return JsonResponse({'liked': liked, 'likes_count': petition.likes.count()})

@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>All Petitions</h2>
+    {% if user.is_authenticated %}
+    <form method="POST" action="{% url 'movies.create_petition' %}">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="movie_name" class="form-label">Movie Name:</label>
+            <input type="text" name="movie_name" id="movie_name" class="form-control" required placeholder="Enter movie name">
+        </div>
+        <button type="submit" class="btn btn-dark">Submit Petition</button>
+    </form>
+    {% endif %}
+    <hr>
+    <ul class="list-group">
+        {% for petition in template_data.petitions %}
+        <li class="list-group-item">
+            <strong>{{ petition.user.username }}</strong> petitioned for <b>{{ petition.movie.name }}</b> ({{ petition.date|date:"Y-m-d H:i" }})
+            <button class="like-petition-btn" data-petition-id="{{ petition.id }}">
+                <i class="fa fa-thumbs-up"></i>
+                <span class="like-count">{{ petition.likes.count }}</span>
+                {% if user in petition.likes.all %}
+                    Liked
+                {% else %}
+                    Like
+                {% endif %}
+            </button>
+        </li>
+        {% empty %}
+        <li class="list-group-item">No petitions yet.</li>
+        {% endfor %}
+    </ul>
+</div>
+<script>
+document.querySelectorAll('.like-petition-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var petitionId = btn.getAttribute('data-petition-id');
+    fetch(`/movies/petition/${petitionId}/like/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': '{{ csrf_token }}',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      btn.querySelector('.like-count').textContent = data.likes_count;
+      btn.innerHTML = '<i class="fa fa-thumbs-up"></i> <span class="like-count">' + data.likes_count + '</span> ' + (data.liked ? 'Liked' : 'Like');
+    });
+  });
+});
+</script>
+{% endblock %}
